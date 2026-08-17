@@ -14,9 +14,7 @@ class _HeadingCollector(Treeprocessor):
     def run(self, root: Element) -> None:
         # Parsing to a tree (rather than regex on the raw text) keeps ``#``
         # lines inside fenced code blocks from being mistaken for headings.
-        self.levels = [
-            int(elem.tag[1]) for elem in root.iter() if elem.tag in {"h1", "h2", "h3", "h4", "h5", "h6"}
-        ]
+        self.levels = [int(elem.tag[1]) for elem in root.iter() if elem.tag in {"h1", "h2", "h3", "h4", "h5", "h6"}]
 
 
 def heading_levels(body: str) -> list[int]:

@@ -70,7 +70,7 @@ The one thing that does **not** embed in a message: inline images (`![alt](url)`
 ## Tone and Audience
 
 - Match the tone to the channel: `#general` is usually more formal than `#random`.
-- For simple acknowledgments, add an emoji reaction with `slack_add_reaction` instead of a reply message (use `slack_get_reactions` to read existing reactions).
+- For simple acknowledgments, add an emoji reaction with `slack_add_reaction` instead of a reply message (use `slack_get_reactions` to read existing reactions). In a Claude Code Channels session, the channel server's `react` tool does the same.
 - When writing announcements, use a clear structure: context, key info, call to action.
 
 ## Scheduling

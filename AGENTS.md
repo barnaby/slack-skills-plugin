@@ -1,6 +1,6 @@
 # Slack Plugin
 
-This plugin integrates Slack with Ai tools, providing tools to search, read, and send messages in Slack. It also offers useful skills for users and developers.
+This plugin integrates Slack with Ai tools, providing tools to search, read, and send messages in Slack. It also offers useful skills for users and developers, and a local channel server (`src/`) that bridges Slack to Claude Code sessions in real time via Channels (research preview).
 
 ## Commands
 
@@ -12,7 +12,7 @@ This plugin integrates Slack with Ai tools, providing tools to search, read, and
 
 ## Development Commands
 
-Requires Python 3.14+. Run `make install` before first use to set up the virtual environment and test dependencies.
+Requires Python 3.14+ and Node.js 26+. Run `make install` before first use to set up the virtual environment, Node modules, and test dependencies.
 
 **Always use the make targets rather than invoking python, pytest, ruff, or other tools directly.** The targets manage the virtualenv for you; running the underlying tools by hand skips that setup and will behave differently. If a `make` command is broken or missing something you need, fix the `Makefile` rather than working around it with the raw command.
 
@@ -27,7 +27,8 @@ Run `make help` for the full list of targets and what each does. The common ones
 | `make typecheck` | Run mypy static type checks |
 | `make test-unit` | Run structural/unit validation tests |
 | `make test-eval` | Run LLM-judged tests (DeepEval against Gemini) |
-| `make test` | Run all tests (unit + eval) |
+| `make test-channel` | Run channel server tests with vitest |
+| `make test` | Run all tests (unit + channel + eval) |
 | `make clean` | Remove virtualenv and local Cursor install |
 | `make cursor-install` | Install this plugin into a local Cursor for development |
 | `make cursor-uninstall` | Uninstall this plugin from the local Cursor install |
@@ -47,12 +48,22 @@ When one `SKILL.md` references another skill (e.g., to delegate a step instead o
 
 See `skills/create-slack-app/SKILL.md` Step 1a for an example.
 
+## Channel Server (Research Preview)
+
+The `slack-channel` MCP server (declared in `.mcp.json`, implemented in `src/`) enables real-time Slack messaging as a Claude Code Channel. It runs as a local subprocess over stdio and connects to Slack with Socket Mode — no public URL needed.
+
+- **Tools**: `reply` (send a message, optionally in a thread), `react` (emoji reaction), `manage_access` (allowlist add/remove/pair), `manage_channels` (watch/unwatch channels)
+- **Layers**: `src/slack.ts` (Bolt, Socket Mode) → `src/bridge.ts` (event/tool transforms, gated by `src/gating.ts`) → `src/mcp.ts` (channel capabilities + permission relay); settings persist in `~/.slack-channel/settings.json` via `src/settings.ts`
+- **Tokens**: `SLACK_BOT_TOKEN` (`xoxb-...`) and `SLACK_APP_TOKEN` (`xapp-...`); see `docs/slack-app-setup.md` for the Slack app configuration
+- **Run**: `claude --dangerously-load-development-channels server:slack-channel` (Channels is a research preview; the flag is required until channels are generally available)
+
 ## Testing
 
-Two test layers validate skills:
+Three test layers:
 
-1. **Unit** (`tests/unit/`): validates frontmatter fields, naming, and markdown structure. Fast, runs in CI on every PR.
-2. **Eval** (`tests/eval/`): LLM-judged tests that use a Gemini model. `tests/eval/test_tool_selection.py` asks the model to pick the expected tool/skill for each of a set of prompts. Because Gemini's free tier caps at 15 requests/minute, the test sleeps ~5s between scenarios (see its `teardown_method`) to stay under the limit.
+1. **Unit** (`tests/unit/`): validates skill frontmatter fields, naming, and markdown structure. Fast, runs in CI on every PR.
+2. **Channel** (`tests/channel/`): vitest suite for the channel server (settings, gating, bridge transforms, MCP tool schemas, env validation, and end-to-end DM→notification→reply flows with mocked Slack). Fast, runs in CI on every PR.
+3. **Eval** (`tests/eval/`): LLM-judged tests that use a Gemini model. `tests/eval/test_tool_selection.py` asks the model to pick the expected tool/skill for each of a set of prompts. Because Gemini's free tier caps at 15 requests/minute, the test sleeps ~5s between scenarios (see its `teardown_method`) to stay under the limit.
 
 To add an eval scenario, append a `Scenario` (prompt + expected tool) to `SCENARIOS` in `tests/eval/test_tool_selection.py`.
 
@@ -63,6 +74,7 @@ GitHub Actions (`.github/workflows/ci-build.yml`) gates every PR with:
 - **Lint**: `make lint`
 - **Typecheck**: `make typecheck`
 - **Test**: `make test-unit`
+- **Channel**: `make test-channel`
 - **Eval**: `make test-eval`
 
 The eval job reads the `GEMINI_API_KEY_*` (e.g. `GEMINI_API_KEY_BOB`, `GEMINI_API_KEY_MIC`) and `SLACK_MCP_TOKEN` repository secrets; it skips on PRs from forks, which don't receive secrets. The workflow also runs nightly on a schedule, and a `notifications` job posts to Slack (via `SLACK_REGRESSION_FAILURES_WEBHOOK_URL`) when a job fails on `main`.

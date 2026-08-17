@@ -6,7 +6,7 @@ RUMDL := $(VENV)/bin/rumdl
 MYPY := $(VENV)/bin/mypy
 DEEPEVAL := $(VENV)/bin/deepeval
 
-TARGETS := help install install-test install-tools clean lint format typecheck test test-unit test-eval cursor-install cursor-uninstall
+TARGETS := help install install-test install-tools clean lint format typecheck test test-unit test-eval test-channel cursor-install cursor-uninstall
 
 .PHONY: $(TARGETS)
 
@@ -17,7 +17,7 @@ $(VENV):
 	python3 -m venv $(VENV)
 	$(PIP) install --upgrade pip
 
-install: install-test install-tools ## Set up everything (venv + deps)
+install: install-test install-tools node_modules ## Set up everything (venv + Python and Node deps)
 
 install-test: $(VENV) ## Install test dependencies (deepeval)
 	$(PIP) install --upgrade pip
@@ -53,11 +53,14 @@ test: ## Run all tests (set testdir=<path> to route to the matching runner)
 ifdef testdir
 	@if echo "$(testdir)" | grep -q "tests/eval"; then \
 		$(MAKE) test-eval testdir="$(testdir)"; \
+	elif echo "$(testdir)" | grep -q "tests/channel"; then \
+		$(MAKE) test-channel testdir="$(testdir)"; \
 	else \
 		$(MAKE) test-unit testdir="$(testdir)"; \
 	fi
 else
 	@$(MAKE) test-unit
+	@$(MAKE) test-channel
 	@$(MAKE) test-eval
 endif
 
@@ -66,3 +69,11 @@ test-unit: ## Run structural/unit validation tests (set testdir=<path> to target
 
 test-eval: ## Run LLM-judged tests (requires GEMINI_API_KEY & SLACK_MCP_TOKEN; set testdir=<path> to target specific files)
 	$(DEEPEVAL) test run $(or $(testdir),tests/eval/) -v
+
+test-channel: node_modules ## Typecheck (tsc) and test (vitest) the channel server (set testdir=<path> to target specific files)
+	npx tsc --noEmit
+	npm run test:channel $(if $(testdir),-- $(testdir))
+
+node_modules: package-lock.json
+	npm ci
+	@touch node_modules

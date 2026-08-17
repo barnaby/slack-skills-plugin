@@ -2,10 +2,24 @@
   "name": "slack",
   "version": "1.2.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=26"
   },
+  "scripts": {
+    "start:channel": "tsx src/index.ts",
+    "test:channel": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "@slack/bolt": "^4.6.0",
+    "tsx": "^4.19.0",
+    "zod": "^4.3.6"
+  },
   "devDependencies": {
-    "@changesets/cli": "^2.31.1"
+    "@changesets/cli": "^2.31.1",
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.0"
   }
 }

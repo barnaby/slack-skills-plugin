@@ -41,20 +41,13 @@ def get_target_path(plugin_key: str) -> Path:
 
 def plugin_name() -> str:
     """Read the plugin name from the Cursor plugin file so renames are picked up."""
-    cursor_plugin = json.loads(
-        (REPO_ROOT / ".cursor-plugin" / "plugin.json").read_text()
-    )
+    cursor_plugin = json.loads((REPO_ROOT / ".cursor-plugin" / "plugin.json").read_text())
     name: str = cursor_plugin["name"]
     return name
 
 
 def plugin_files() -> set[Path]:
-    included = {
-        path
-        for pattern in INCLUDE
-        for path in REPO_ROOT.glob(pattern)
-        if path.is_file()
-    }
+    included = {path for pattern in INCLUDE for path in REPO_ROOT.glob(pattern) if path.is_file()}
     excluded = {path for pattern in EXCLUDE for path in REPO_ROOT.glob(pattern)}
     return included - excluded
 
@@ -69,6 +62,21 @@ def load_json(path: Path) -> dict:
 def save_json(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n")
+
+
+# MCP servers that only work under Claude Code and depend on files (src/,
+# node_modules/) that are not copied into the Cursor install.
+CLAUDE_ONLY_MCP_SERVERS: set[str] = {"slack-channel"}
+
+
+def strip_claude_only_servers(mcp_path: Path) -> None:
+    """Drop Claude-only MCP servers from a copied .mcp.json."""
+    config = load_json(mcp_path)
+    servers = config.get("mcpServers", {})
+    removed = [name for name in CLAUDE_ONLY_MCP_SERVERS if servers.pop(name, None)]
+    if removed:
+        save_json(mcp_path, config)
+        logger.info(f"Removed Claude-only MCP servers from {mcp_path}: {removed}")
 
 
 def install() -> None:
@@ -88,10 +96,10 @@ def install() -> None:
         shutil.copy2(source, dest)
     logger.info(f"Copied {len(files)} plugin files to {target}")
 
+    strip_claude_only_servers(target / ".mcp.json")
+
     installed = load_json(CLAUDE_INSTALLED_PLUGINS_PATH)
-    installed.setdefault("plugins", {})[plugin_key] = [
-        {"scope": "user", "installPath": str(target)}
-    ]
+    installed.setdefault("plugins", {})[plugin_key] = [{"scope": "user", "installPath": str(target)}]
     save_json(CLAUDE_INSTALLED_PLUGINS_PATH, installed)
     logger.info(f"Registered '{plugin_key}' in {CLAUDE_INSTALLED_PLUGINS_PATH}")
 
@@ -100,9 +108,7 @@ def install() -> None:
     save_json(CLAUDE_SETTINGS_PATH, settings)
     logger.info(f"Enabled '{plugin_key}' in {CLAUDE_SETTINGS_PATH}")
 
-    logger.info(
-        f"Installed '{plugin_key}'. Reload plugins in Cursor to pick up the changes."
-    )
+    logger.info(f"Installed '{plugin_key}'. Reload plugins in Cursor to pick up the changes.")
 
 
 def uninstall() -> None:
@@ -121,18 +127,14 @@ def uninstall() -> None:
         save_json(CLAUDE_INSTALLED_PLUGINS_PATH, installed)
         logger.info(f"Deregistered '{plugin_key}' from {CLAUDE_INSTALLED_PLUGINS_PATH}")
     else:
-        logger.warning(
-            f"'{plugin_key}' was not registered in {CLAUDE_INSTALLED_PLUGINS_PATH}; nothing to remove"
-        )
+        logger.warning(f"'{plugin_key}' was not registered in {CLAUDE_INSTALLED_PLUGINS_PATH}; nothing to remove")
 
     settings = load_json(CLAUDE_SETTINGS_PATH)
     if settings.get("enabledPlugins", {}).pop(plugin_key, None) is not None:
         save_json(CLAUDE_SETTINGS_PATH, settings)
         logger.info(f"Disabled '{plugin_key}' in {CLAUDE_SETTINGS_PATH}")
     else:
-        logger.warning(
-            f"'{plugin_key}' was not enabled in {CLAUDE_SETTINGS_PATH}; nothing to remove"
-        )
+        logger.warning(f"'{plugin_key}' was not enabled in {CLAUDE_SETTINGS_PATH}; nothing to remove")
 
 
 def main() -> None:
@@ -148,9 +150,7 @@ def main() -> None:
     subcommands.add_parser(
         "install", help=f"Install this plugin into local Cursor ({CURSOR_PLUGINS_PATH})"
     ).set_defaults(func=install)
-    subcommands.add_parser(
-        "uninstall", help="Uninstall this plugin from local Cursor"
-    ).set_defaults(func=uninstall)
+    subcommands.add_parser("uninstall", help="Uninstall this plugin from local Cursor").set_defaults(func=uninstall)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 

@@ -38,6 +38,23 @@ The plugin connects your AI tool to Slack's hosted [MCP server][slack-mcp-docs]:
 - **Canvas** - create, read, and update canvas documents
 - **Users** - read profiles and list channel members
 
+### Channels for Claude Code (research preview)
+
+The plugin also ships a local `slack-channel` MCP server that turns Slack into a [Claude Code Channel][channels]: Slack messages are pushed into your Claude Code session in real time, and Claude can reply, react, and even relay tool-permission prompts to Slack. This is a Claude Code-specific feature (it does not apply to Cursor) and requires [Channels][channels], currently a research preview.
+
+- **Real-time messaging** - DMs, @mentions, and watched channel messages arrive as channel events
+- **Reply & react** - Claude sends messages and emoji reactions back through `reply` and `react` tools
+- **Access control** - pairing-based sender allowlist; unknown senders are dropped before reaching Claude
+- **Permission relay** - approve or deny Claude's tool use from Slack with `yes <id>` / `no <id>` replies
+
+It connects over Socket Mode, so no public URL is needed — but it does need its own Slack app and two tokens (`SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`). Follow [the setup guide](docs/slack-app-setup.md) to create the app, then start Claude Code with:
+
+```bash
+claude --dangerously-load-development-channels server:slack-channel
+```
+
+On first contact, the bot DMs you a pairing code — reply `pair <CODE>` to add yourself to the allowlist. To pre-configure allowed users and watched channels, see the settings file format in [the setup guide](docs/slack-app-setup.md).
+
 ### Skills
 
 Six skills load on demand to handle messaging tasks and developer workflows:
@@ -87,6 +104,7 @@ We welcome contributions from everyone! Please check out our [contributor's guid
 
 Working on the plugin itself? See the [maintainer's guide](.github/maintainers_guide.md) for local development setup.
 
+[channels]: https://code.claude.com/docs/en/channels
 [claude-code]: https://claude.com/claude-code
 [cursor]: https://cursor.com
 [slack-mcp-docs]: https://docs.slack.dev/ai/mcp-server/

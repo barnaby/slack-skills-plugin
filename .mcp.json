@@ -7,6 +7,10 @@
         "clientId": "1601185624273.8899143856786",
         "callbackPort": 3118
       }
+    },
+    "slack-channel": {
+      "command": "npx",
+      "args": ["tsx", "${CLAUDE_PLUGIN_ROOT:-.}/src/index.ts"]
     }
   }
 }
