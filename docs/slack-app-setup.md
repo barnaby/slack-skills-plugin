@@ -83,7 +83,7 @@ Required for the permission relay buttons (Approve/Deny).
 
 ## 8. Configure the Channel Server
 
-Add your tokens to `.mcp.json`:
+The `slack-channel` server is already declared in the plugin's `.mcp.json` alongside the remote `slack` server:
 
 ```json
 {
@@ -98,14 +98,17 @@ Add your tokens to `.mcp.json`:
     },
     "slack-channel": {
       "command": "npx",
-      "args": ["tsx", "./src/index.ts"],
-      "env": {
-        "SLACK_BOT_TOKEN": "xoxb-your-token-here",
-        "SLACK_APP_TOKEN": "xapp-your-token-here"
-      }
+      "args": ["tsx", "${CLAUDE_PLUGIN_ROOT:-.}/src/index.ts"]
     }
   }
 }
+```
+
+The server reads `SLACK_BOT_TOKEN` and `SLACK_APP_TOKEN` from the environment. Export them in your shell (or put them in a `.env` file your shell loads) before starting Claude Code:
+
+```bash
+export SLACK_BOT_TOKEN=xoxb-your-token-here
+export SLACK_APP_TOKEN=xapp-your-token-here
 ```
 
 ## 9. Test Standalone (Without Claude Code)
