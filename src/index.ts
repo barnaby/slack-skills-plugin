@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { homedir } from 'node:os'
 import { readSettings } from './settings'
 import { Gating } from './gating'
 import { createMcpServer, connectMcp } from './mcp'
@@ -21,7 +22,7 @@ if (!appToken || !appToken.startsWith('xapp-')) {
 
 // --- Load settings ---
 const settingsPath = process.env.SLACK_CHANNEL_SETTINGS_PATH
-  || `${process.env.HOME}/.slack-channel/settings.json`
+  || `${homedir()}/.slack-channel/settings.json`
 
 const settings = await readSettings(settingsPath)
 
