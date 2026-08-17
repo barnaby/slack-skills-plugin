@@ -1,5 +1,16 @@
 # slack
 
+## 1.3.0
+
+### Minor Changes
+
+- 9a4500c: Add Claude Code Channels support (research preview): a local `slack-channel` MCP server that bridges Slack to Claude Code sessions in real time over Socket Mode. Receives DMs, @mentions, and watched-channel messages as channel events; exposes `reply`, `react`, `manage_access`, and `manage_channels` tools; gates senders behind a pairing-based allowlist; and relays tool-permission prompts to Slack. Ported from slackapi/slack-skills-plugin#23 by @marciogranzotto.
+
+### Patch Changes
+
+- 77a1079: Clarify Claude and Cursor plugin manifest descriptions so both user and developer audiences are discoverable. The Codex manifest describes skills only and does not claim workspace interaction, since the MCP server is not wired into the Codex surface.
+- c17458c: Sharpen the slack-messaging and slack-search skill guidance: clearer trigger descriptions, accurate standard-markdown formatting rules (tables, headers, code blocks), more search modifiers and parameters, and scope notes linking to related skills.
+
 ## 1.2.0
 
 ### Minor Changes
