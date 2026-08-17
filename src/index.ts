@@ -39,11 +39,12 @@ bridge.setMcpServer(mcp)
 const botUserId = await getBotUserId(slackApp)
 registerEventHandlers(slackApp, bridge, botUserId)
 
-// --- Start Slack (Socket Mode) — handlers already registered ---
-await startSlackApp(slackApp)
-
-// --- Connect MCP (stdio) after Slack is confirmed connected ---
+// --- Connect MCP (stdio) before Slack: notifications need a live transport,
+// and the host's initialize handshake must not wait on Slack's network ---
 await connectMcp(mcp)
+
+// --- Start Slack (Socket Mode) — handlers and MCP already wired ---
+await startSlackApp(slackApp)
 
 if (gating.isBootstrapMode()) {
   console.error('[slack-channel] bootstrap mode: DM the bot to start pairing')

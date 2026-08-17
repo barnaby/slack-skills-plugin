@@ -120,7 +120,8 @@ SLACK_BOT_TOKEN=xoxb-... SLACK_APP_TOKEN=xapp-... npx tsx src/index.ts
 ```
 
 Expected output on stderr:
-```
+
+```text
 [slack-channel] connected to Slack as your-bot-name (U...)
 [slack-channel] bootstrap mode: DM the bot to start pairing
 [slack-channel] ready
@@ -129,6 +130,7 @@ Expected output on stderr:
 If you see `ready`, the Slack connection is working. Press Ctrl+C to stop.
 
 **Troubleshooting:**
+
 - `SLACK_BOT_TOKEN is missing or invalid` — Check the token starts with `xoxb-`
 - `SLACK_APP_TOKEN is missing or invalid` — Check the token starts with `xapp-`
 - Connection hangs — Verify Socket Mode is enabled in the Slack app settings
@@ -141,6 +143,7 @@ claude --dangerously-load-development-channels server:slack-channel
 ```
 
 Then in Slack:
+
 1. DM the bot — you should see a pairing code as an ephemeral message
 2. Reply `pair <CODE>` — you should see "Paired successfully"
 3. Send a message — Claude should receive it and can reply

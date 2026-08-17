@@ -70,7 +70,8 @@ test-unit: ## Run structural/unit validation tests (set testdir=<path> to target
 test-eval: ## Run LLM-judged tests (requires GEMINI_API_KEY & SLACK_MCP_TOKEN; set testdir=<path> to target specific files)
 	$(DEEPEVAL) test run $(or $(testdir),tests/eval/) -v
 
-test-channel: node_modules ## Run channel server tests with vitest (set testdir=<path> to target specific files)
+test-channel: node_modules ## Typecheck (tsc) and test (vitest) the channel server (set testdir=<path> to target specific files)
+	npx tsc --noEmit
 	npm run test:channel $(if $(testdir),-- $(testdir))
 
 node_modules: package-lock.json

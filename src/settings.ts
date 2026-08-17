@@ -24,7 +24,12 @@ export async function readSettings(path: string): Promise<Settings> {
     const raw = await readFile(path, 'utf-8')
     const parsed = JSON.parse(raw)
     return SettingsSchema.parse(parsed)
-  } catch {
+  } catch (err) {
+    // Falling back to defaults empties the allowlist and re-opens bootstrap
+    // pairing, so make the reason visible instead of failing silently.
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.error(`[slack-channel] failed to read settings at ${path}, using defaults:`, err)
+    }
     return {
       gating: {
         mode: DEFAULT_SETTINGS.gating.mode,

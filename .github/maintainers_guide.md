@@ -56,8 +56,9 @@ commands by hand.
 
 ### Setup
 
-Run the one-time setup, which creates the virtualenv and installs the test and
-lint dependencies (requires Python 3.14+, see above):
+Run the one-time setup, which creates the virtualenv, installs the test and
+lint dependencies, and installs the Node modules for the channel server
+(requires Python 3.14+, see above, and Node.js 26+):
 
 ```sh
 make install

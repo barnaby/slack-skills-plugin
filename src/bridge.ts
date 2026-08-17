@@ -4,6 +4,7 @@ import type { Gating } from './gating'
 import type { Settings } from './settings'
 import { writeSettings } from './settings'
 import { writeFile, mkdir } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { dirname } from 'node:path'
 
 export interface ActiveContext {
@@ -126,6 +127,10 @@ export class Bridge {
   async handleMention(event: SlackMentionEvent): Promise<void> {
     if (!this.gating.isAllowed(event.user)) return
 
+    // A mention in a watched channel also arrives as a message event, which
+    // handleMessage already forwards — skip it here to avoid a duplicate.
+    if (this.settings.watchedChannels.includes(event.channel)) return
+
     await this.emitChannelNotification('mention', {
       text: event.text,
       user: event.user,
@@ -192,7 +197,7 @@ export class Bridge {
   async handleToolCall(
     name: string,
     args: Record<string, string>,
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
     try {
       switch (name) {
         case 'reply':
@@ -266,9 +271,10 @@ export class Bridge {
   }
 
   async handlePermissionAction(requestId: string, approved: boolean, channelId: string, messageTs: string, userId?: string): Promise<void> {
-    // Validate the acting user is in the allowlist
-    if (userId && !this.gating.isAllowed(userId)) {
-      console.error(`[slack-channel] permission action rejected: user ${userId} not in allowlist`)
+    // Validate the acting user is in the allowlist. A missing user id is a
+    // rejection, not a bypass — deny by default.
+    if (!userId || !this.gating.isAllowed(userId)) {
+      console.error(`[slack-channel] permission action rejected: user ${userId || '<unknown>'} not in allowlist`)
       return
     }
 
@@ -402,7 +408,8 @@ export class Bridge {
 
       const code = this.gating.createPairingCode(event.user)
       if (code) {
-        console.log(`[slack-channel] pairing code: ${code}`)
+        // stderr only — stdout is the MCP JSON-RPC channel once connected
+        console.error(`[slack-channel] pairing code: ${code}`)
         await this.writePairingCodeFile(code)
         await this.slackApp.client.chat.postEphemeral({
           channel: event.channel,
@@ -551,7 +558,7 @@ export class Bridge {
     try {
       const path = this.settingsPath
         ? `${dirname(this.settingsPath)}/pairing-code.txt`
-        : `${process.env.HOME}/.slack-channel/pairing-code.txt`
+        : `${homedir()}/.slack-channel/pairing-code.txt`
       await mkdir(dirname(path), { recursive: true })
       await writeFile(path, code)
     } catch (err) {

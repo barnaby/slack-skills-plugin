@@ -149,6 +149,36 @@ describe('Bridge - mention events', () => {
     const call = (mockMcp.notification as any).mock.calls[0]
     expect(call[0].params.meta.event).toBe('mention')
   })
+
+  test('skips mentions in watched channels (message event already forwards them)', async () => {
+    const settings: Settings = {
+      gating: { mode: 'per-user', allowedUsers: ['U_ALLOWED'] },
+      watchedChannels: ['C_WATCHED'],
+    }
+    const gating = new Gating(settings)
+    const watchedMcp = createMockMcp()
+    const watchedBridge = new Bridge(createMockSlackApp() as any, gating, settings)
+    watchedBridge.setMcpServer(watchedMcp as any)
+
+    await watchedBridge.handleMention({
+      text: '<@BOTID> deploy',
+      user: 'U_ALLOWED',
+      channel: 'C_WATCHED',
+      ts: '1234.5678',
+    })
+    expect(watchedMcp.notification).not.toHaveBeenCalled()
+
+    await watchedBridge.handleMessage({
+      text: '<@BOTID> deploy',
+      user: 'U_ALLOWED',
+      channel: 'C_WATCHED',
+      channel_type: 'channel',
+      ts: '1234.5678',
+    })
+    expect(watchedMcp.notification).toHaveBeenCalledTimes(1)
+    const call = (watchedMcp.notification as any).mock.calls[0]
+    expect(call[0].params.meta.event).toBe('message')
+  })
 })
 
 describe('Bridge - permission verdict parsing', () => {
